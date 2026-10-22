@@ -1,0 +1,949 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Einmaleins-Insel">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#e0f7ff">
+<title>Einmaleins-Insel</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<style>
+:root{
+  --bg1:#e0f7ff; --bg2:#fff0f6; --ink:#2d2a4a; --muted:#6b6790; --card:#ffffff;
+  --accent:#ff7aa8; --accent2:#7c6cff; --ok:#2fbf71; --bad:#ff6b6b; --gold:#ffb703; --sea:#38b6e8;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{
+  font-family:"Comic Sans MS","Chalkboard SE","Segoe UI Rounded","Nunito",system-ui,sans-serif;
+  color:var(--ink); background:linear-gradient(160deg,var(--bg1),var(--bg2)); background-attachment:fixed;
+  user-select:none; -webkit-user-select:none; -webkit-text-size-adjust:100%; -webkit-touch-callout:none; overscroll-behavior:none;
+}
+button{font:inherit;color:inherit;cursor:pointer;border:none;touch-action:manipulation;-webkit-touch-callout:none}
+.modalbg{position:fixed;inset:0;background:rgba(45,42,74,.45);display:flex;align-items:center;justify-content:center;z-index:60;padding:16px}
+.modal{background:var(--card);border-radius:24px;padding:22px;max-width:420px;width:100%;text-align:center;font-size:20px;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+.modal p{margin:0 0 18px}
+.modal div{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.app{max-width:820px;margin:0 auto;padding-block:max(14px,env(safe-area-inset-top,0px)) 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));min-height:100%}
+.screen{display:none;animation:pop .25s ease}
+.screen.active{display:block}
+@keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.topbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.pill{background:var(--card);border-radius:999px;padding:8px 14px;font-weight:bold;box-shadow:0 3px 0 rgba(0,0,0,.08);display:inline-flex;align-items:center;gap:6px;font-size:18px}
+.spacer{flex:1}
+.iconbtn{background:var(--card);border-radius:14px;width:48px;height:48px;font-size:24px;box-shadow:0 3px 0 rgba(0,0,0,.1)}
+.iconbtn:active{transform:translateY(2px);box-shadow:none}
+
+h1{font-size:34px;margin:6px 0 2px;text-align:center}
+h2{font-size:26px;margin:4px 0 12px;text-align:center}
+.sub{text-align:center;color:var(--muted);margin:0 0 18px;font-size:18px}
+
+.buddy{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:22px;padding:12px 16px;box-shadow:0 4px 0 rgba(0,0,0,.08);margin:10px 0 14px}
+.buddy .face{font-size:50px;line-height:1;position:relative}
+.buddy .bubble{font-size:19px}
+
+/* Spieler-Level */
+.xp{background:var(--card);border-radius:22px;padding:12px 16px;box-shadow:0 4px 0 rgba(0,0,0,.08);margin-bottom:14px}
+.xp .row{display:flex;justify-content:space-between;align-items:center;font-weight:bold;font-size:18px;gap:8px;flex-wrap:wrap}
+.xp .bar{height:18px;background:#eef;border-radius:999px;overflow:hidden;margin-top:8px}
+.xp .bar i{display:block;height:100%;background:linear-gradient(90deg,#a78bfa,#ff8fb8);border-radius:999px;transition:width .6s}
+.xp small{color:var(--muted);font-size:14px}
+
+/* Insel */
+.island{position:relative;height:150px;border-radius:24px;overflow:hidden;margin-bottom:14px;background:linear-gradient(#bfeaff 0 55%,#38b6e8 55%);box-shadow:0 4px 0 rgba(0,0,0,.08)}
+.island .land{position:absolute;left:8%;right:8%;bottom:18px;height:62px;background:#ffe08a;border-radius:50% 50% 40% 40%/80% 80% 30% 30%;box-shadow:inset 0 -10px 0 #f5c96a}
+.island .it{position:absolute;font-size:34px;line-height:1;transform:translate(-50%,0)}
+.island .dragon{position:absolute;left:50%;bottom:40px;font-size:58px;transform:translateX(-50%);animation:bob 2s ease-in-out infinite alternate}
+@keyframes bob{to{transform:translate(-50%,-6px)}}
+.island .sun{position:absolute;right:16px;top:10px;font-size:34px}
+
+.menu{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.menu button{background:var(--card);border-radius:24px;padding:18px 10px;font-size:20px;font-weight:bold;box-shadow:0 5px 0 rgba(0,0,0,.1);display:flex;flex-direction:column;align-items:center;gap:6px}
+.menu button .big{font-size:42px}
+.menu button small{font-weight:normal;font-size:14px;color:var(--muted)}
+.menu button.main{grid-column:1/-1;background:linear-gradient(135deg,#ff9ac0,#a78bfa);color:#fff;font-size:26px}
+.menu button.daily{background:linear-gradient(135deg,#ffd166,#ff9f43);color:#4a2b00}
+.menu button.daily small{color:#6b4500}
+.menu button:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,.1)}
+
+.levels{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px}
+.lvl{background:var(--card);border-radius:22px;padding:14px 10px;text-align:center;box-shadow:0 5px 0 rgba(0,0,0,.1);position:relative}
+.lvl .ic{font-size:40px}
+.lvl .t{font-weight:bold;font-size:19px;margin:4px 0}
+.lvl .d{font-size:14px;color:var(--muted);min-height:34px}
+.lvl .st{font-size:22px;letter-spacing:2px;margin-top:6px}
+.lvl.locked{opacity:.5;filter:grayscale(.8)}
+.lvl.locked::after{content:"🔒";position:absolute;top:8px;right:12px;font-size:22px}
+.lvl .num{position:absolute;top:8px;left:12px;font-size:14px;color:var(--muted)}
+
+/* Spiel */
+.progress{display:flex;gap:6px;flex:1;justify-content:center;flex-wrap:wrap}
+.progress span{width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:inset 0 0 0 2px #ddd}
+.progress span.ok{background:var(--ok);box-shadow:none}
+.progress span.bad{background:var(--bad);box-shadow:none}
+.progress span.cur{box-shadow:inset 0 0 0 3px var(--accent2)}
+.card{background:var(--card);border-radius:28px;padding:18px;box-shadow:0 6px 0 rgba(0,0,0,.08)}
+.prompt{font-size:22px;text-align:center;margin:4px 0 8px;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;color:var(--muted)}
+.speak{background:#f1eeff;border-radius:50%;width:42px;height:42px;font-size:20px;flex:none}
+.task{font-size:56px;font-weight:bold;text-align:center;margin:6px 0;letter-spacing:2px}
+.task .q{display:inline-block;min-width:1.4em;padding:0 8px;border-radius:14px;background:#f1eeff;color:var(--accent2)}
+.seq{font-size:38px;font-weight:bold;text-align:center;margin:10px 0;display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+.seq span{background:#f4f2ff;border-radius:14px;padding:4px 12px}
+.seq span.q{background:var(--accent2);color:#fff}
+.center{text-align:center}
+.dots{display:inline-grid;gap:5px;padding:12px;background:#fff9e6;border-radius:18px;margin:4px auto}
+.dots i{width:22px;height:22px;border-radius:50%;background:var(--accent);display:block}
+.dots i.b{background:var(--accent2)}
+.dots.small i{width:14px;height:14px}
+.dots .gapc{width:4px}
+.options{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.opt{background:#f4f2ff;border-radius:18px;padding:16px 8px;font-size:32px;font-weight:bold;box-shadow:0 4px 0 #d9d4ff;min-height:76px}
+.opt:active{transform:translateY(2px);box-shadow:0 2px 0 #d9d4ff}
+.opt.right{background:var(--ok);color:#fff;box-shadow:0 4px 0 #1e8b51}
+.opt.wrong{background:var(--bad);color:#fff;box-shadow:0 4px 0 #c94444}
+.opt:disabled{cursor:default}
+.display{font-size:48px;font-weight:bold;text-align:center;background:#f4f2ff;border-radius:18px;min-height:72px;line-height:72px;margin:8px auto;max-width:260px;letter-spacing:4px}
+.display.ok{background:#d8f7e6;color:#16773f}.display.bad{background:#ffe1e1;color:#a33}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:360px;margin:8px auto 0}
+.pad button{background:#fff;border-radius:18px;font-size:32px;font-weight:bold;height:68px;box-shadow:0 4px 0 #d9d4ff;border:2px solid #ece9ff}
+.pad button:active{transform:translateY(2px);box-shadow:0 2px 0 #d9d4ff}
+.pad button.go{background:var(--ok);color:#fff;border-color:var(--ok);box-shadow:0 4px 0 #1e8b51}
+.pad button.del{background:#ffe9b8;border-color:#ffe9b8;box-shadow:0 4px 0 #e8c56a}
+.btn{background:linear-gradient(135deg,#ff8fb8,#a78bfa);color:#fff;font-weight:bold;font-size:24px;border-radius:20px;padding:14px 28px;box-shadow:0 5px 0 #7d63d6;display:inline-block}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 #7d63d6}
+.btn.green{background:linear-gradient(135deg,#43d18a,#22a866);box-shadow:0 5px 0 #187a4a}
+.btn.small{font-size:18px;padding:10px 18px}
+.btn.grey{background:#ddd;color:var(--ink);box-shadow:0 5px 0 #bbb}
+.feedback{margin-top:14px;text-align:center;font-size:21px}
+.feedback .msg{padding:12px;border-radius:16px;margin-bottom:12px}
+.feedback .msg.ok{background:#e3f9ec;color:#16773f}
+.feedback .msg.bad{background:#ffecec;color:#a33}
+.tip{background:#fff7d6;border-radius:16px;padding:10px 14px;font-size:18px;margin:10px 0;line-height:1.5}
+.timer{font-size:22px;font-weight:bold}
+.timebar{height:12px;background:#eee;border-radius:999px;overflow:hidden;margin:0 0 10px}
+.timebar i{display:block;height:100%;background:linear-gradient(90deg,#43d18a,#ffd166,#ff6b6b);transition:width 1s linear}
+
+/* Ergebnis */
+.stars{font-size:64px;text-align:center;letter-spacing:6px;margin:8px 0}
+.stars .off{filter:grayscale(1);opacity:.3}
+.reward{display:flex;flex-direction:column;align-items:center;gap:6px;margin:12px 0;font-size:20px;text-align:center}
+.reward .sticker{font-size:90px;animation:wiggle 1s ease infinite alternate}
+@keyframes wiggle{from{transform:rotate(-8deg) scale(1)}to{transform:rotate(8deg) scale(1.08)}}
+
+/* Tafel */
+.table{display:grid;grid-template-columns:repeat(11,1fr);gap:4px;max-width:620px;margin:0 auto}
+.table div{aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:clamp(11px,2.6vw,18px);font-weight:bold;background:#eee;color:#999}
+.table div.h{background:transparent;color:var(--accent2);font-size:clamp(13px,3vw,20px)}
+.table div.m1{background:#ffd0d0;color:#a33}
+.table div.m2{background:#ffe2b8;color:#8a5200}
+.table div.m3{background:#fff2a8;color:#7a6500}
+.table div.m4{background:#c9f2d6;color:#16773f}
+.table div.m5{background:linear-gradient(135deg,#ffe066,#ffb703);color:#6b4500;box-shadow:0 0 0 2px #ffb70355}
+.legendrow{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:12px 0;font-size:15px}
+.legendrow span{padding:4px 10px;border-radius:999px}
+
+.album{display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:10px}
+.album div{background:var(--card);border-radius:16px;aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:42px;box-shadow:0 3px 0 rgba(0,0,0,.08)}
+.album div.no{font-size:26px;color:#ccc;background:#f6f6f6}
+.shop{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:14px}
+.item{background:var(--card);border-radius:22px;padding:14px;text-align:center;box-shadow:0 5px 0 rgba(0,0,0,.08)}
+.item .e{font-size:54px}
+.item .n{font-weight:bold;font-size:17px;margin:4px 0 8px}
+.ach{display:flex;flex-direction:column;gap:10px}
+.ach div{background:var(--card);border-radius:18px;padding:12px 16px;display:flex;gap:14px;align-items:center;font-size:18px;box-shadow:0 3px 0 rgba(0,0,0,.08)}
+.ach div .i{font-size:36px}
+.ach div.no{opacity:.45;filter:grayscale(1)}
+.ach small{display:block;color:var(--muted);font-size:14px}
+
+.parents label{display:flex;align-items:center;gap:10px;font-size:18px;margin:12px 0}
+.parents input[type=text]{font:inherit;font-size:20px;padding:8px 12px;border-radius:12px;border:2px solid #ddd;width:200px}
+.parents input[type=checkbox]{width:26px;height:26px}
+.stats{background:#f8f7ff;border-radius:18px;padding:12px 16px;margin:12px 0;font-size:16px;line-height:1.7}
+
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#2d2a4a;color:#fff;padding:12px 20px;border-radius:16px;font-size:18px;z-index:50;opacity:0;transition:opacity .3s;pointer-events:none;text-align:center;max-width:90vw}
+.toast.show{opacity:1}
+.confetti{position:fixed;top:-20px;font-size:26px;z-index:40;pointer-events:none;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+.intro{background:#fff7d6;border-radius:20px;padding:14px 18px;font-size:19px;line-height:1.5;margin:10px 0 16px}
+@media (max-width:480px){
+  h1{font-size:27px} .task{font-size:44px} .seq{font-size:28px}
+  .menu button{font-size:17px} .menu button .big{font-size:34px}
+  .dots i{width:16px;height:16px} .pad button{height:60px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- HOME -->
+<section class="screen active" id="s-home">
+  <div class="topbar">
+    <span class="pill" title="Edelsteine">💎 <span class="coins">0</span></span>
+    <span class="pill" title="Sterne">⭐ <span class="starsTotal">0</span></span>
+    <span class="pill" title="Tage hintereinander">🔥 <span class="streak">0</span></span>
+    <span class="spacer"></span>
+    <button class="iconbtn" data-go="parents" title="Für Eltern">⚙️</button>
+  </div>
+  <h1>🏝️ <span class="pname">Meine</span> Einmaleins-Insel</h1>
+  <div class="buddy"><div class="face" id="homeFace">🥚</div><div class="bubble" id="homeBuddy"></div></div>
+  <div class="xp" id="xpBox"></div>
+  <div class="island" id="homeIsland"></div>
+  <div class="menu">
+    <button class="main" data-go="levels"><span class="big">🗺️</span>Abenteuer-Karte</button>
+    <button class="daily" id="dailyBtn"><span class="big">☀️</span>Tages-Training<small id="dailyInfo"></small></button>
+    <button id="blitzBtn"><span class="big">⚡</span>Blitz-Runde<small id="blitzInfo"></small></button>
+    <button data-go="table"><span class="big">🔢</span>Einmaleins-Tafel<small id="tableInfo"></small></button>
+    <button data-go="shop"><span class="big">🛍️</span>Insel-Laden</button>
+    <button data-go="album"><span class="big">📒</span>Sticker-Album</button>
+    <button data-go="ach"><span class="big">🏆</span>Pokale</button>
+  </div>
+</section>
+
+<!-- LEVELS -->
+<section class="screen" id="s-levels">
+  <div class="topbar">
+    <button class="iconbtn" data-go="home">🏠</button>
+    <span class="spacer"></span>
+    <span class="pill">💎 <span class="coins">0</span></span>
+    <span class="pill">⭐ <span class="starsTotal">0</span></span>
+  </div>
+  <h2>🗺️ Abenteuer-Karte</h2>
+  <p class="sub">Jede Insel ist eine Malreihe. Schaffe 1 Stern, dann geht die nächste auf!</p>
+  <div class="levels" id="levelList"></div>
+</section>
+
+<!-- INTRO -->
+<section class="screen" id="s-intro">
+  <div class="topbar"><button class="iconbtn" data-go="levels">⬅️</button></div>
+  <h2 id="introTitle"></h2>
+  <div class="buddy"><div class="face" id="introFace">🐲</div><div class="bubble" id="introText"></div></div>
+  <div class="card center" id="introShow"></div>
+  <p class="center" style="margin-top:18px"><button class="btn green" id="introGo">Los geht's! ▶</button></p>
+</section>
+
+<!-- GAME -->
+<section class="screen" id="s-game">
+  <div class="topbar">
+    <button class="iconbtn" id="quitGame" title="Beenden">✖️</button>
+    <div class="progress" id="progress"></div>
+    <span class="pill" id="gameRight">✅ 0</span>
+  </div>
+  <div class="timebar" id="timebar" style="display:none"><i></i></div>
+  <div class="card">
+    <div class="prompt" id="prompt"></div>
+    <div id="visual"></div>
+    <div id="answerArea"></div>
+    <div class="feedback" id="feedback"></div>
+  </div>
+</section>
+
+<!-- RESULT -->
+<section class="screen" id="s-result">
+  <h2 id="resTitle"></h2>
+  <div class="stars" id="resStars"></div>
+  <p class="sub" id="resText"></p>
+  <div class="reward" id="resReward"></div>
+  <p class="center" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+    <button class="btn grey" id="resBack">🏠 Zurück</button>
+    <button class="btn" id="resAgain">🔁 Nochmal</button>
+    <button class="btn green" id="resNext">Weiter ▶</button>
+  </p>
+</section>
+
+<!-- TAFEL -->
+<section class="screen" id="s-table">
+  <div class="topbar"><button class="iconbtn" data-go="home">🏠</button><span class="spacer"></span><span class="pill" id="tableCount"></span></div>
+  <h2>🔢 Deine Einmaleins-Tafel</h2>
+  <p class="sub">Jede Aufgabe wird golden, wenn du sie oft richtig und schnell kannst. Schaffst du die ganze Tafel?</p>
+  <div class="table" id="tableGrid"></div>
+  <div class="legendrow">
+    <span style="background:#eee">neu</span><span style="background:#ffd0d0">geübt</span><span style="background:#ffe2b8">wird besser</span>
+    <span style="background:#fff2a8">fast</span><span style="background:#c9f2d6">gut</span><span style="background:#ffd75e">⭐ gemeistert</span>
+  </div>
+  <p class="sub" style="font-size:15px">Tipp: Tippe auf ein Feld, dann siehst du die Aufgabe als Punktefeld.</p>
+  <div id="tableShow" class="center"></div>
+</section>
+
+<!-- ALBUM -->
+<section class="screen" id="s-album">
+  <div class="topbar"><button class="iconbtn" data-go="home">🏠</button><span class="spacer"></span><span class="pill" id="albumCount"></span></div>
+  <h2>📒 Sticker-Album</h2>
+  <p class="sub">Für jede geschaffte Runde gibt es einen neuen Sticker!</p>
+  <div class="album" id="albumGrid"></div>
+</section>
+
+<!-- SHOP -->
+<section class="screen" id="s-shop">
+  <div class="topbar"><button class="iconbtn" data-go="home">🏠</button><span class="spacer"></span><span class="pill">💎 <span class="coins">0</span></span></div>
+  <h2>🛍️ Insel-Laden</h2>
+  <p class="sub">Mach Funkels Insel schön! Alles, was du kaufst, steht danach auf der Insel.</p>
+  <div class="shop" id="shopGrid"></div>
+</section>
+
+<!-- ACHIEVEMENTS -->
+<section class="screen" id="s-ach">
+  <div class="topbar"><button class="iconbtn" data-go="home">🏠</button><span class="spacer"></span><span class="pill" id="achCount"></span></div>
+  <h2>🏆 Pokale</h2>
+  <div class="ach" id="achList"></div>
+</section>
+
+<!-- PARENTS -->
+<section class="screen parents" id="s-parents">
+  <div class="topbar"><button class="iconbtn" data-go="home">🏠</button></div>
+  <h2>⚙️ Für Eltern</h2>
+  <div class="card">
+    <label>Name des Kindes: <input type="text" id="pName" maxlength="16" placeholder="z. B. Lena"></label>
+    <label><input type="checkbox" id="pSound"> Töne an</label>
+    <label><input type="checkbox" id="pAutoSpeak"> Aufgaben automatisch vorlesen</label>
+    <label><input type="checkbox" id="pDiv"> Geteilt-Aufgaben im Tages-Training mischen</label>
+    <div class="stats" id="pStats"></div>
+    <p style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn small" id="pSave">💾 Speichern</button>
+      <button class="btn small grey" id="pUnlock">🔓 Alle Level freischalten</button>
+      <button class="btn small grey" id="pReset">🗑️ Fortschritt löschen</button>
+    </p>
+    <p style="color:var(--muted);font-size:14px">Der Fortschritt wird nur in diesem Browser auf diesem Gerät gespeichert. Tipp: Über Teilen › „Zum Home-Bildschirm“ startet das Spiel wie eine App im Vollbild.<br>
+    Aufbau nach Grundschul-Didaktik: erst die Kernaufgaben (2er, 10er, 5er), dann abgeleitete Reihen (4er = doppelte 2er, 9er = 10er minus 1 …). Das Tages-Training wiederholt automatisch die Aufgaben, die noch nicht sitzen.</p>
+  </div>
+</section>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* ---------- Hilfsfunktionen ---------- */
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const rnd = n => Math.floor(Math.random() * n);
+const pick = a => a[rnd(a.length)];
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const pad2 = n => String(n).padStart(2, '0');
+function ask(text, yes, onYes, onNo) {
+  const bg = document.createElement('div'); bg.className = 'modalbg';
+  bg.innerHTML = `<div class="modal"><p>${text}</p><div><button class="btn grey small" data-r="0">Nein</button><button class="btn small" data-r="1">${yes}</button></div></div>`;
+  bg.addEventListener('click', e => { const b = e.target.closest('button'); if (b || e.target === bg) { bg.remove(); if (b && b.dataset.r === '1') onYes(); else if (onNo) onNo(); } });
+  document.body.appendChild(bg);
+}
+function today() { const d = new Date(); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+function yesterday() { const d = new Date(); d.setDate(d.getDate() - 1); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+
+/* ---------- Speichern ---------- */
+const KEY = 'einmaleins-insel-v1';
+const DEFAULT = { name:'', coins:0, xp:0, stars:{}, stickers:[], items:[], ach:[], facts:{},
+  streak:0, lastDay:'', dailyDone:'', blitzBest:0, totalCorrect:0, totalAnswered:0, rounds:0, perfect:0,
+  sound:true, autoSpeak:false, divMix:false, unlockAll:false };
+let S = load();
+function load() {
+  try { const raw = localStorage.getItem(KEY); if (raw) return Object.assign({}, JSON.parse(JSON.stringify(DEFAULT)), JSON.parse(raw)); } catch (e) {}
+  return JSON.parse(JSON.stringify(DEFAULT));
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+
+/* ---------- Töne & Sprache ---------- */
+let AC = null;
+function tone(freqs, dur = 0.12, type = 'sine') {
+  if (!S.sound) return;
+  try {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    if (AC.state === 'suspended') AC.resume();
+    freqs.forEach((f, i) => {
+      const o = AC.createOscillator(), g = AC.createGain(), t0 = AC.currentTime + i * dur;
+      o.type = type; o.frequency.value = f; g.gain.setValueAtTime(0.18, t0); g.gain.exponentialRampToValueAtTime(0.001, t0 + dur * 1.6);
+      o.connect(g); g.connect(AC.destination); o.start(t0); o.stop(t0 + dur * 1.7);
+    });
+  } catch (e) {}
+}
+const sndOk = () => tone([660, 880, 1320], 0.09);
+const sndBad = () => tone([300, 220], 0.15, 'triangle');
+const sndWin = () => tone([523, 659, 784, 1047, 784, 1047], 0.12);
+const sndTap = () => tone([900], 0.03, 'square');
+function speak(text) {
+  try {
+    if (!('speechSynthesis' in window)) return;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text.replace(/<[^>]+>/g, '').replace(/·/g, ' mal ').replace(/ : /g, ' geteilt durch ').replace(/\?/g, ''));
+    u.lang = 'de-DE'; u.rate = 0.9;
+    const v = speechSynthesis.getVoices().find(v => v.lang && v.lang.startsWith('de'));
+    if (v) u.voice = v;
+    speechSynthesis.speak(u);
+  } catch (e) {}
+}
+function toast(msg, ms = 2400) { const t = $('#toast'); t.innerHTML = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), ms); }
+function confetti(n = 40) {
+  const em = ['🎉','⭐','✨','🎊','💖','🌟','💎'];
+  for (let i = 0; i < n; i++) {
+    const d = document.createElement('div'); d.className = 'confetti'; d.textContent = pick(em);
+    d.style.left = Math.random() * 100 + 'vw'; d.style.animationDuration = (1.8 + Math.random() * 2) + 's'; d.style.animationDelay = Math.random() * 0.6 + 's';
+    document.body.appendChild(d); setTimeout(() => d.remove(), 5000);
+  }
+}
+
+/* ---------- Spieler-Level & Drache Funkel ---------- */
+const TITLES = ['Zahlen-Entdeckerin','Rechen-Zwergin','Punkte-Zählerin','Reihen-Springerin','Mal-Maus','Rechen-Ritterin',
+  'Zahlen-Zauberin','Einmaleins-Heldin','Rechen-Prinzessin','Mathe-Meisterin','Einmaleins-Königin','Zahlen-Kaiserin'];
+const xpFor = lv => 60 + lv * 40;            // XP, um von Level lv auf lv+1 zu kommen
+function playerLevel() {
+  let lv = 1, rest = S.xp;
+  while (rest >= xpFor(lv)) { rest -= xpFor(lv); lv++; }
+  return { lv, rest, need: xpFor(lv) };
+}
+function dragon(lv) {
+  if (lv < 3) return { e:'🥚', n:'Funkels Ei', say:'Im Ei wackelt es schon! Mit jeder richtigen Aufgabe wächst Funkel.' };
+  if (lv < 6) return { e:'🐣', n:'Baby-Funkel', say:'Piep! Ich bin geschlüpft! Rechnest du weiter mit mir?' };
+  if (lv < 10) return { e:'🐲', n:'Funkel', say:'Ich werde immer größer – weil du so gut rechnest!' };
+  if (lv < 15) return { e:'🐉', n:'Großer Funkel', say:'Jetzt bin ich ein richtiger Drache! Bald bekomme ich eine Krone …' };
+  return { e:'🐉👑', n:'König Funkel', say:'Mit dir bin ich der König der Einmaleins-Insel!' };
+}
+const title = lv => TITLES[Math.min(TITLES.length - 1, Math.floor((lv - 1) / 2))];
+
+/* ---------- Aufgaben-Wissen (Lernkartei) ---------- */
+const fkey = (a, b) => Math.min(a, b) + 'x' + Math.max(a, b);
+const fact = (a, b) => S.facts[fkey(a, b)] || { b:0, r:0, w:0, d:'' };
+function record(a, b, ok, ms) {
+  const k = fkey(a, b), f = Object.assign({ b:0, r:0, w:0, d:'' }, S.facts[k]);
+  if (ok) {
+    f.r++;
+    // langsam & richtig: nur bis "wird besser"; ab "fast" höchstens eine Stufe pro Tag (Wiederholung an mehreren Tagen)
+    if ((ms < 7000 || f.b < 2) && !(f.b >= 3 && f.up === today())) { f.b = Math.min(5, f.b + 1); if (f.b >= 4) f.up = today(); }
+    else f.b = Math.max(f.b, 2);
+  } else { f.w++; f.b = f.b > 2 ? 2 : 1; }
+  f.d = today(); S.facts[k] = f;
+}
+const ALLFACTS = []; for (let a = 1; a <= 10; a++) for (let b = a; b <= 10; b++) ALLFACTS.push([a, b]);
+const mastered = () => ALLFACTS.filter(([a, b]) => fact(a, b).b >= 5).length;
+
+/* ---------- Level ---------- */
+const LEVELS = [
+  { id:1,  icon:'🐰', title:'2er-Reihe',  rows:[2],  desc:'Hüpfen in Zweier-Sprüngen', tip:'Mal 2 heißt: verdoppeln! 2 · 7 ist 7 + 7.' },
+  { id:2,  icon:'🐙', title:'10er-Reihe', rows:[10], desc:'Ganz leicht: eine Null dran', tip:'Bei mal 10 hängst du einfach eine Null an: 10 · 4 = 40.' },
+  { id:3,  icon:'🖐️', title:'5er-Reihe',  rows:[5],  desc:'Die Hälfte von der 10er-Reihe', tip:'5 ist die Hälfte von 10. 5 · 8 ist die Hälfte von 10 · 8 = 80, also 40.' },
+  { id:4,  icon:'⭐', title:'Kern-Mix',   rows:[1,2,5,10], desc:'1er, 2er, 5er, 10er gemischt', tip:'Mal 1 bleibt gleich: 1 · 6 = 6. Diese Kernaufgaben helfen dir später bei allen anderen Reihen!' },
+  { id:5,  icon:'🐘', title:'4er-Reihe',  rows:[4],  desc:'Doppelt so viel wie die 2er', tip:'Mal 4 ist zweimal verdoppeln: 4 · 6 → 6 + 6 = 12, und 12 + 12 = 24.' },
+  { id:6,  icon:'🍀', title:'3er-Reihe',  rows:[3],  desc:'Drei, sechs, neun …', tip:'3 · 7 ist 2 · 7 und noch einmal 7 dazu: 14 + 7 = 21.' },
+  { id:7,  icon:'🐞', title:'6er-Reihe',  rows:[6],  desc:'Doppelt so viel wie die 3er', tip:'6 · 7 ist 5 · 7 und noch eine 7 dazu: 35 + 7 = 42.' },
+  { id:8,  icon:'🐱', title:'9er-Reihe',  rows:[9],  desc:'Ein Trick mit der 10er-Reihe', tip:'9 · 6 ist 10 · 6 minus 6: 60 − 6 = 54. Und die Quersumme ist immer 9!' },
+  { id:9,  icon:'🐙', title:'8er-Reihe',  rows:[8],  desc:'Doppelt so viel wie die 4er', tip:'8 ist verdoppeln, verdoppeln, verdoppeln: 8 · 3 → 6 → 12 → 24.' },
+  { id:10, icon:'🌈', title:'7er-Reihe',  rows:[7],  desc:'Die Regenbogen-Reihe', tip:'7 · 8 ist 5 · 8 plus 2 · 8: 40 + 16 = 56. Merkspruch: 5, 6, 7, 8 → 56 = 7 · 8!' },
+  { id:11, icon:'🟪', title:'Quadrat-Zahlen', rows:'sq', desc:'3·3, 6·6, 9·9 …', tip:'Gleiche Zahl mal sich selbst gibt ein Quadrat: 6 · 6 = 36 Punkte, 6 Reihen und 6 Spalten.' },
+  { id:12, icon:'🎲', title:'Großer Mix', rows:[1,2,3,4,5,6,7,8,9,10], desc:'Alle Reihen bis 10', tip:'Jetzt kommt alles gemischt. Denk an deine Tricks: verdoppeln, Nachbar-Aufgabe, 10er minus …' },
+  { id:13, icon:'🍰', title:'Geteilt durch', rows:[1,2,3,4,5,6,7,8,9,10], div:true, desc:'Die Umkehr-Aufgaben', tip:'24 : 4 fragt: Wie oft passt die 4 in die 24? Denk an die Mal-Aufgabe: 6 · 4 = 24, also 24 : 4 = 6.' },
+  { id:14, icon:'👑', title:'Meister-Prüfung', rows:[3,4,6,7,8,9], exam:true, desc:'Die schwersten Aufgaben', tip:'Die große Prüfung! Nur die schweren Reihen, alles mit dem Zahlen-Feld. Du schaffst das!' },
+];
+const ROUND = 10;
+const unlocked = id => S.unlockAll || id === 1 || (S.stars[id - 1] || 0) >= 1;
+const levelRows = lv => lv.rows === 'sq' ? [1,2,3,4,5,6,7,8,9,10] : lv.rows;
+
+function factsForLevel(lv) {
+  if (lv.rows === 'sq') return shuffle([2,3,4,5,6,7,8,9,10,3,4,6,7,8,9].map(n => [n, n]));
+  if (lv.exam) { const out = []; ALLFACTS.forEach(([a, b]) => { if (a >= 3 && b >= 3 && a !== 5 && b !== 5 && a !== 10 && b !== 10) out.push(Math.random() < .5 ? [a, b] : [b, a]); }); return shuffle(out); }
+  if (lv.rows.length > 1) {
+    const out = []; for (let i = 0; i < 40; i++) { const a = pick(lv.rows), b = 1 + rnd(10); out.push(Math.random() < .5 ? [a, b] : [b, a]); }
+    return out;
+  }
+  const n = lv.rows[0];
+  // Reihe: 10 verschiedene Partner, die "1" kommt seltener dran
+  let partners = shuffle([2,3,4,5,6,7,8,9,10,1,pick([3,4,6,7,8,9])]).slice(0, ROUND);
+  return partners.map((k, i) => (i % 3 === 2) ? [k, n] : [n, k]);
+}
+// Aufgabenarten im Verlauf einer Runde: erst anschaulich, dann immer schneller
+function typesForLevel(lv) {
+  if (lv.exam) return Array(ROUND).fill('pad');
+  if (lv.div) return ['divpic','divchoice','divchoice','divchoice','divpad','divpad','divpad','divpad','divpad','divpad'];
+  if (lv.rows === 'sq') return ['pic','pic','choice','choice','choice','pad','pad','pad','pad','pad'];
+  if (lv.rows.length > 1) return ['choice','choice','choice','missing','choice','pad','pad','pad','pad','pad'];
+  return ['pic','jump','choice','pic','missing','choice','jump','pad','pad','pad'];
+}
+
+/* ---------- Darstellungen ---------- */
+function dotsHTML(rows, cols, small) {
+  // Punktefeld mit Fünfer-Struktur (Lücke nach der 5. Spalte / Zeile)
+  const cw = [], rh = [];
+  for (let c = 0; c < cols; c++) { cw.push('auto'); if (c === 4 && cols > 5) cw.push('6px'); }
+  let cells = '';
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) { cells += `<i class="${r % 2 ? 'b' : ''}"></i>`; if (c === 4 && cols > 5) cells += '<span></span>'; }
+    if (r === 4 && rows > 5) cells += '<span style="height:4px"></span>'.repeat(cw.length);
+  }
+  return `<div class="dots ${small ? 'small' : ''}" style="grid-template-columns:${cw.join(' ')}">${cells}</div>`;
+}
+function hintFor(a, b) {
+  const c = a * b;
+  const [x, y] = (a === 1 || a === 2 || a === 5 || a === 10) && !(b === 1 || b === 2 || b === 5 || b === 10) ? [b, a] : [a, b];
+  // x = schwierige Zahl, y = andere Zahl
+  if (x === 1 || y === 1) return `Mal 1 bleibt gleich: ${a} · ${b} = ${c}.`;
+  if (x === 10 || y === 10) return `Bei mal 10 hängst du eine Null an: ${a} · ${b} = ${c}.`;
+  if (x === 2 || y === 2) { const o = x === 2 ? y : x; return `Verdoppeln: ${o} + ${o} = ${c}.`; }
+  if (x === 5 || y === 5) { const o = x === 5 ? y : x; return `Halb so viel wie 10 · ${o} = ${10 * o}. Die Hälfte ist ${c}.`; }
+  if (x === y) return `Quadrat-Zahl: ${x} Reihen mit je ${x} Punkten sind ${c}.`;
+  if (x === 9) return `10 · ${y} = ${10 * y}, dann ${y} weg: ${10 * y} − ${y} = ${c}.`;
+  if (y === 9) return `10 · ${x} = ${10 * x}, dann ${x} weg: ${10 * x} − ${x} = ${c}.`;
+  if (x === 4 || y === 4) { const o = x === 4 ? y : x; return `Zweimal verdoppeln: ${o} → ${2 * o} → ${c}.`; }
+  if (x === 8 || y === 8) { const o = x === 8 ? y : x; return `Dreimal verdoppeln: ${o} → ${2 * o} → ${4 * o} → ${c}.`; }
+  if (x === 6 || y === 6) { const o = x === 6 ? y : x; return `5 · ${o} = ${5 * o}, plus noch einmal ${o}: ${c}.`; }
+  if (x === 3 || y === 3) { const o = x === 3 ? y : x; return `2 · ${o} = ${2 * o}, plus noch einmal ${o}: ${c}.`; }
+  if (x === 7 || y === 7) { const o = x === 7 ? y : x; return `5 · ${o} = ${5 * o} und 2 · ${o} = ${2 * o}. Zusammen ${c}.`; }
+  return `${a} · ${b} = ${c}.`;
+}
+function wrongOptions(a, b, n = 3) {
+  const c = a * b, cand = new Set([a * (b + 1), a * (b - 1), (a + 1) * b, (a - 1) * b, c + 1, c - 1, c + 10, c - 10, a + b, c + 2]);
+  const out = shuffle([...cand].filter(v => v > 0 && v !== c && v <= 110));
+  return out.slice(0, n);
+}
+
+/* ---------- Spielrunde ---------- */
+let G = null;
+function startLevel(id) {
+  const lv = LEVELS.find(l => l.id === id);
+  $('#introTitle').textContent = `${lv.icon} ${lv.title}`;
+  $('#introFace').textContent = dragon(playerLevel().lv).e;
+  $('#introText').textContent = lv.tip;
+  let show = '';
+  if (Array.isArray(lv.rows) && lv.rows.length === 1) {
+    const n = lv.rows[0];
+    show = `<div class="seq">${[1,2,3,4,5,6,7,8,9,10].map(k => `<span>${n * k}</span>`).join('')}</div>` +
+      `<p class="sub" style="margin:6px 0">Das ist die ${n}er-Reihe. Lies sie laut mit! 🔊</p><button class="btn small" id="introSpeak">🔊 Vorlesen</button>`;
+  } else if (lv.rows === 'sq') show = dotsHTML(6, 6) + '<p class="sub" style="margin:6px 0">6 · 6 = 36</p>';
+  else if (lv.div) show = dotsHTML(4, 6) + '<p class="sub" style="margin:6px 0">24 Punkte in 4 Reihen: 24 : 4 = 6</p>';
+  else show = dotsHTML(3, 7) + '<p class="sub" style="margin:6px 0">3 · 7 = 21</p>';
+  $('#introShow').innerHTML = show;
+  const sp = $('#introSpeak');
+  if (sp) sp.onclick = () => speak([1,2,3,4,5,6,7,8,9,10].map(k => lv.rows[0] * k).join(', '));
+  $('#introGo').onclick = () => beginRound({ mode:'level', lv });
+  go('intro');
+}
+function beginRound(opts) {
+  let facts, types;
+  if (opts.mode === 'level') { facts = factsForLevel(opts.lv); types = typesForLevel(opts.lv); }
+  else if (opts.mode === 'daily') { facts = dailyFacts(); types = facts.map((f, i) => f.div ? 'divpad' : (i < 3 ? 'choice' : 'pad')); }
+  else { facts = []; types = []; }
+  G = { ...opts, facts, types, i:0, right:0, results:[], seen:new Set(), t0:0, input:'', locked:false };
+  $('#timebar').style.display = opts.mode === 'blitz' ? 'block' : 'none';
+  go('game');
+  if (opts.mode === 'blitz') startBlitzTimer();
+  nextTask();
+}
+function renderProgress() {
+  if (G.mode === 'blitz') { $('#progress').innerHTML = `<span class="timer" id="blitzTime">⏱️ ${G.left}s</span>`; }
+  else $('#progress').innerHTML = Array.from({ length:ROUND }, (_, i) =>
+    `<span class="${i < G.results.length ? (G.results[i] ? 'ok' : 'bad') : (i === G.i ? 'cur' : '')}"></span>`).join('');
+  $('#gameRight').textContent = '✅ ' + G.right;
+}
+function nextTask() {
+  if (G.mode !== 'blitz' && G.i >= ROUND) return finishRound();
+  let a, b, type, fobj;
+  if (G.mode === 'blitz') {
+    const rows = unlockedRows();
+    a = pick(rows); b = 1 + rnd(10); if (Math.random() < .5) [a, b] = [b, a]; type = 'pad';
+  } else {
+    fobj = G.facts[G.i]; [a, b] = fobj.f || fobj; type = G.types[G.i] || 'pad';
+  }
+  G.cur = { a, b, c:a * b, type };
+  G.input = ''; G.locked = false; G.t0 = Date.now();
+  renderProgress();
+  $('#feedback').innerHTML = '';
+  const vis = $('#visual'), ans = $('#answerArea');
+  let say = '';
+  const c = a * b;
+  if (type === 'pic') {
+    $('#prompt').innerHTML = `Wie viele Punkte sind das? ${speakBtn()}`;
+    vis.innerHTML = `<div class="center">${dotsHTML(a, b)}</div><div class="task">${a} · ${b} = <span class="q">?</span></div>`;
+    say = `${a} Reihen mit je ${b} Punkten. Wie viel ist ${a} mal ${b}?`;
+    choices(c, wrongOptions(a, b));
+  } else if (type === 'jump') {
+    const n = levelRows(G.lv)[0], k = b === n && a !== n ? a : b, start = Math.max(1, Math.min(k - 2 - rnd(2), 6));
+    const seq = []; for (let j = start; j < start + 5; j++) seq.push(j);
+    const hole = seq.indexOf(k) >= 0 ? seq.indexOf(k) : 2;
+    G.cur.c = n * seq[hole];
+    $('#prompt').innerHTML = `Welche Zahl fehlt in der ${n}er-Reihe? ${speakBtn()}`;
+    vis.innerHTML = `<div class="seq">${seq.map((j, i) => i === hole ? '<span class="q">?</span>' : `<span>${n * j}</span>`).join('')}</div>`;
+    say = `Welche Zahl fehlt in der ${n}er Reihe?`;
+    G.cur.a = n; G.cur.b = seq[hole];
+    choices(G.cur.c, wrongOptions(n, seq[hole]));
+  } else if (type === 'missing') {
+    $('#prompt').innerHTML = `Welche Zahl fehlt? ${speakBtn()}`;
+    vis.innerHTML = `<div class="task">${a} · <span class="q">?</span> = ${c}</div>`;
+    say = `${a} mal wie viel ist ${c}?`;
+    G.cur.answer = b;
+    choices(b, shuffle([1,2,3,4,5,6,7,8,9,10].filter(v => v !== b)).slice(0, 3));
+  } else if (type === 'choice') {
+    $('#prompt').innerHTML = `Was ist das Ergebnis? ${speakBtn()}`;
+    vis.innerHTML = `<div class="task">${a} · ${b} = <span class="q">?</span></div>`;
+    say = `Wie viel ist ${a} mal ${b}?`;
+    choices(c, wrongOptions(a, b));
+  } else if (type === 'divpic' || type === 'divchoice' || type === 'divpad') {
+    G.cur.answer = b;
+    $('#prompt').innerHTML = `Geteilt-Aufgabe ${speakBtn()}`;
+    vis.innerHTML = (type === 'divpic' ? `<div class="center">${dotsHTML(a, b)}</div><p class="sub" style="margin:4px 0">${c} Punkte in ${a} Reihen – wie viele in jeder Reihe?</p>` : '') +
+      `<div class="task">${c} : ${a} = <span class="q">${type === 'divpad' ? '&nbsp;' : '?'}</span></div>`;
+    say = `Wie viel ist ${c} geteilt durch ${a}?`;
+    if (type === 'divpad') padArea(); else choices(b, shuffle([1,2,3,4,5,6,7,8,9,10].filter(v => v !== b)).slice(0, 3));
+  } else {
+    $('#prompt').innerHTML = (G.mode === 'blitz' ? 'Schnell!' : 'Tippe das Ergebnis ein.') + ' ' + speakBtn();
+    vis.innerHTML = `<div class="task">${a} · ${b} = <span class="q" id="qslot">&nbsp;</span></div>`;
+    say = `Wie viel ist ${a} mal ${b}?`;
+    padArea();
+  }
+  if (type === 'divpad') { const q = vis.querySelector('.q'); if (q) q.id = 'qslot'; }
+  G.say = say;
+  const sb = $('#prompt .speak'); if (sb) sb.onclick = () => speak(G.say);
+  if (S.autoSpeak && G.mode !== 'blitz') speak(say);
+}
+const speakBtn = () => `<button class="speak" title="Vorlesen">🔊</button>`;
+function choices(correct, wrongs) {
+  const opts = shuffle([correct, ...wrongs]);
+  $('#answerArea').innerHTML = `<div class="options">${opts.map(o => `<button class="opt" data-v="${o}">${o}</button>`).join('')}</div>`;
+  $$('#answerArea .opt').forEach(btn => btn.onclick = () => {
+    if (G.locked) return;
+    const v = Number(btn.dataset.v), ok = v === correct;
+    btn.classList.add(ok ? 'right' : 'wrong');
+    if (!ok) $$('#answerArea .opt').forEach(x => { if (Number(x.dataset.v) === correct) x.classList.add('right'); });
+    $$('#answerArea .opt').forEach(x => x.disabled = true);
+    answer(ok);
+  });
+}
+function padArea() {
+  $('#answerArea').innerHTML = `<div class="pad">${[1,2,3,4,5,6,7,8,9].map(n => `<button data-k="${n}">${n}</button>`).join('')}<button class="del" data-k="del">⌫</button><button data-k="0">0</button><button class="go" data-k="ok">✔</button></div>`;
+  $$('#answerArea .pad button').forEach(b => b.onclick = () => padKey(b.dataset.k));
+}
+function padKey(k) {
+  if (G.locked) return;
+  const slot = $('#qslot');
+  if (k === 'del') { G.input = G.input.slice(0, -1); sndTap(); }
+  else if (k === 'ok') { if (G.input === '') return; checkPad(); return; }
+  else if (G.input.length < 3) { G.input += k; sndTap(); }
+  if (slot) slot.innerHTML = G.input || '&nbsp;';
+  // automatisch prüfen, sobald genug Ziffern da sind
+  const target = String(G.cur.answer != null ? G.cur.answer : G.cur.c);
+  if (G.input.length === target.length && G.input === target) checkPad();
+}
+function checkPad() {
+  const target = G.cur.answer != null ? G.cur.answer : G.cur.c;
+  const ok = Number(G.input) === target;
+  const slot = $('#qslot');
+  if (slot) { slot.style.background = ok ? '#d8f7e6' : '#ffe1e1'; slot.style.color = ok ? '#16773f' : '#a33'; }
+  answer(ok);
+}
+const PRAISE = ['Super! 🎉','Klasse! ⭐','Toll gemacht! 💖','Richtig! 🌟','Wow! 🐉','Spitze! 🚀','Prima! 🍀','Genau! 💎'];
+const COMFORT = ['Fast!','Knapp daneben!','Nicht schlimm!','Gleich klappt es!'];
+function answer(ok) {
+  G.locked = true;
+  const { a, b, c } = G.cur, ms = Date.now() - G.t0;
+  const factA = G.cur.type === 'jump' ? G.cur.a : a, factB = G.cur.type === 'jump' ? G.cur.b : b;
+  record(factA, factB, ok, ms);
+  S.totalAnswered++; if (ok) { S.totalCorrect++; S.xp += 10; G.right++; }
+  G.results.push(ok);
+  if (G.mode === 'blitz') {
+    if (ok) { sndOk(); G.score = (G.score || 0) + 1; setTimeout(() => { if (G && G.left > 0) nextTask(); }, 250); }
+    else {
+      sndBad();
+      $('#feedback').innerHTML = `<div class="msg bad">${factA} · ${factB} = <b>${factA * factB}</b></div>`;
+      setTimeout(() => { if (G && G.left > 0) nextTask(); }, 1300);
+    }
+    renderProgress(); save(); return;
+  }
+  const isDiv = G.cur.type.startsWith('div');
+  const full = isDiv ? `${c} : ${a} = ${b}` : G.cur.type === 'missing' ? `${a} · ${b} = ${c}` : `${factA} · ${factB} = ${factA * factB}`;
+  if (ok) {
+    sndOk();
+    $('#feedback').innerHTML = `<div class="msg ok">${pick(PRAISE)} ${full}</div>`;
+    G.i++; save();
+    setTimeout(() => { if (G && G.i <= ROUND && $('#s-game').classList.contains('active')) nextTask(); }, 900);
+  } else {
+    sndBad();
+    $('#feedback').innerHTML = `<div class="msg bad">${pick(COMFORT)} Richtig ist: <b>${full}</b></div>` +
+      `<div class="center">${dotsHTML(factA, factB, true)}</div><div class="tip">💡 ${hintFor(factA, factB)}</div>` +
+      `<button class="btn green" id="goOn">Weiter ▶</button>`;
+    $('#goOn').onclick = () => { G.i++; nextTask(); };
+    save();
+  }
+  renderProgress();
+}
+
+/* ---------- Tages-Training (Wiederholung schwacher Aufgaben) ---------- */
+function unlockedRows() {
+  const rows = new Set([2]);
+  LEVELS.forEach(l => { if ((S.stars[l.id] || 0) >= 1 || S.unlockAll) { if (Array.isArray(l.rows)) l.rows.forEach(r => rows.add(r)); else [1,2,3,4,5,6,7,8,9,10].forEach(r => rows.add(r)); } });
+  return [...rows];
+}
+function dailyFacts() {
+  const rows = unlockedRows();
+  const pool = ALLFACTS.filter(([a, b]) => rows.includes(a) || rows.includes(b)).filter(([a, b]) => !(a === 1 && b === 1));
+  const t = today();
+  const scored = pool.map(([a, b]) => { const f = fact(a, b); return { f:[a, b], s:f.b * 10 + (f.d === t ? 8 : 0) - (f.w > f.r ? 5 : 0) + Math.random() * 6 }; });
+  scored.sort((x, y) => x.s - y.s);
+  return shuffle(scored.slice(0, ROUND)).map((x, i) => {
+    let [a, b] = Math.random() < .5 ? x.f : [x.f[1], x.f[0]];
+    return { f:[a, b], div: S.divMix && i >= 6 && unlocked(13) };
+  });
+}
+
+/* ---------- Blitz-Runde ---------- */
+const BLITZ_SEC = 60;
+function startBlitzTimer(resume) {
+  if (!resume) { G.left = BLITZ_SEC; G.score = 0; }
+  const bar = $('#timebar i'); bar.style.width = (100 * G.left / BLITZ_SEC) + '%';
+  clearInterval(G.timer);
+  G.timer = setInterval(() => {
+    if (!G || G.mode !== 'blitz') return;
+    G.left--; const el = $('#blitzTime'); if (el) el.textContent = `⏱️ ${G.left}s`;
+    bar.style.width = (100 * G.left / BLITZ_SEC) + '%';
+    if (G.left <= 0) { clearInterval(G.timer); G.locked = true; finishRound(); }
+  }, 1000);
+}
+
+/* ---------- Belohnungen ---------- */
+const STICKERS = ['🐶','🐱','🐰','🦊','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🐧','🐦','🦉','🦄','🐝','🦋','🐞','🐢','🐬','🐳','🐙','🦀','🐠','🦒','🦓','🐘','🦔','🐿️','🦩','🦜','🐉','🌈','🌻','🌸','🍓','🍉','🍦','🧁','🍭','🎈','🎀','🪁','🚀','🏰','👑','💎','🎠','🧸','🐹','🦭','🐊','🦚','🍩','🌙','⚽','🎨','🎸','🛼'];
+const ITEMS = [
+  { id:'palme',   e:'🌴', n:'Palme',        p:15,  x:16, y:62 },
+  { id:'blume',   e:'🌸', n:'Blumen',       p:10,  x:30, y:84 },
+  { id:'pilz',    e:'🍄', n:'Glückspilz',   p:12,  x:70, y:86 },
+  { id:'muschel', e:'🐚', n:'Muschel',      p:10,  x:86, y:96 },
+  { id:'krabbe',  e:'🦀', n:'Krabbe Kalle', p:20,  x:22, y:100 },
+  { id:'schild',  e:'🐢', n:'Schildkröte',  p:25,  x:80, y:70 },
+  { id:'zelt',    e:'⛺', n:'Zelt',         p:30,  x:34, y:58 },
+  { id:'boot',    e:'⛵', n:'Segelboot',    p:35,  x:6,  y:100 },
+  { id:'brunnen', e:'⛲', n:'Brunnen',      p:45,  x:62, y:56 },
+  { id:'delfin',  e:'🐬', n:'Delfin',       p:50,  x:94, y:108 },
+  { id:'regenb',  e:'🌈', n:'Regenbogen',   p:60,  x:22, y:14 },
+  { id:'karuss',  e:'🎠', n:'Karussell',    p:80,  x:44, y:56 },
+  { id:'einhorn', e:'🦄', n:'Einhorn',      p:100, x:74, y:42 },
+  { id:'burg',    e:'🏰', n:'Schloss',      p:140, x:86, y:28 },
+  { id:'riesenr', e:'🎡', n:'Riesenrad',    p:160, x:10, y:30 },
+  { id:'rakete',  e:'🚀', n:'Rakete',       p:200, x:60, y:6 },
+];
+function finishRound() {
+  if (!G) return;
+  clearInterval(G.timer);
+  const mode = G.mode;
+  S.rounds++;
+  // Tage-Serie
+  const t = today();
+  if (S.lastDay !== t) { S.streak = S.lastDay === yesterday() ? S.streak + 1 : 1; S.lastDay = t; }
+  let stars = 0, coins = 0, extra = '', title = '', text = '';
+  if (mode === 'blitz') {
+    const sc = G.score || 0, rec = sc > S.blitzBest;
+    if (rec) S.blitzBest = sc;
+    stars = sc >= 25 ? 3 : sc >= 15 ? 2 : sc >= 6 ? 1 : 0;
+    coins = Math.floor(sc / 2) + (rec ? 10 : 0);
+    title = rec ? '⚡ Neuer Rekord!' : '⚡ Zeit um!';
+    text = `Du hast ${sc} Aufgaben in 60 Sekunden geschafft!` + (rec ? '' : ` Dein Rekord: ${S.blitzBest}.`);
+  } else {
+    const r = G.right;
+    stars = r >= 10 ? 3 : r >= 8 ? 2 : r >= 6 ? 1 : 0;
+    coins = r + stars * 3;
+    if (mode === 'level') {
+      const old = S.stars[G.lv.id] || 0;
+      if (stars > old) { S.stars[G.lv.id] = stars; if (stars === 3) { coins += 10; extra += '<div>🌟 Erstes Mal 3 Sterne: +10 💎</div>'; } }
+      if (old === 0 && stars >= 1) { const nx = LEVELS.find(l => l.id === G.lv.id + 1); if (nx) extra += `<div>🔓 Neue Insel frei: ${nx.icon} ${nx.title}</div>`; }
+    }
+    if (mode === 'daily' && S.dailyDone !== t) { S.dailyDone = t; coins += 15; extra += '<div>☀️ Tages-Bonus: +15 💎</div>'; }
+    if (r === 10) S.perfect++;
+    title = stars === 3 ? '🎉 Perfekt!' : stars === 2 ? '🌟 Super gemacht!' : stars === 1 ? '👍 Geschafft!' : '💪 Weiter üben!';
+    text = `${r} von ${ROUND} richtig.` + (stars === 0 ? ' Für einen Stern brauchst du 6 richtige. Probier es gleich nochmal!' : '');
+  }
+  const lvBefore = playerLevel().lv;
+  S.coins += coins;
+  let reward = `<div>+${coins} 💎 Edelsteine</div>` + extra;
+  if (stars >= 1) {
+    const free = STICKERS.filter(s => !S.stickers.includes(s));
+    if (free.length) { const s = pick(free); S.stickers.push(s); reward = `<div class="sticker">${s}</div><div>Neuer Sticker fürs Album!</div>` + reward; }
+  }
+  const lvAfter = playerLevel().lv;
+  if (lvAfter > lvBefore) {
+    const d1 = dragon(lvBefore), d2 = dragon(lvAfter);
+    reward += `<div style="font-size:24px;margin-top:8px">⬆️ Level ${lvAfter}: <b>${title_(lvAfter)}</b></div>` +
+      (d1.e !== d2.e ? `<div style="font-size:60px">${d2.e}</div><div>${d2.n}: „${d2.say}“</div>` : '');
+  }
+  save();
+  $('#resTitle').textContent = title;
+  $('#resStars').innerHTML = [1,2,3].map(i => `<span class="${i <= stars ? '' : 'off'}">⭐</span>`).join('');
+  $('#resText').textContent = text;
+  $('#resReward').innerHTML = reward;
+  const nextLv = mode === 'level' ? LEVELS.find(l => l.id === G.lv.id + 1) : null;
+  $('#resNext').style.display = nextLv && unlocked(nextLv.id) ? '' : 'none';
+  const g = G;
+  $('#resAgain').onclick = () => { if (g.mode === 'level') startLevel(g.lv.id); else beginRound({ mode:g.mode }); };
+  $('#resNext').onclick = () => startLevel(nextLv.id);
+  $('#resBack').onclick = () => go(mode === 'level' ? 'levels' : 'home');
+  G = null;
+  if (stars >= 2) { sndWin(); confetti(stars === 3 ? 60 : 30); } else if (stars === 1) sndOk();
+  go('result');
+  checkAchievements();
+}
+const title_ = lv => title(lv);
+
+const ACH = [
+  { id:'first',   i:'🐣', n:'Erste Runde',        d:'Spiele deine erste Runde', ok:() => S.rounds >= 1 },
+  { id:'perfect', i:'🌟', n:'Alles richtig',      d:'Eine Runde ohne Fehler', ok:() => S.perfect >= 1 },
+  { id:'perf10',  i:'💯', n:'Fehlerfrei-Profi',   d:'10 Runden ohne Fehler', ok:() => S.perfect >= 10 },
+  { id:'kern',    i:'⭐', n:'Kern-Kennerin',       d:'2er, 10er, 5er und Kern-Mix geschafft', ok:() => [1,2,3,4].every(i => S.stars[i] >= 1) },
+  { id:'half',    i:'🗺️', n:'Halbe Karte',         d:'7 Inseln geschafft', ok:() => LEVELS.filter(l => S.stars[l.id] >= 1).length >= 7 },
+  { id:'all',     i:'🏝️', n:'Alle Inseln',         d:'Alle 14 Inseln geschafft', ok:() => LEVELS.every(l => S.stars[l.id] >= 1) },
+  { id:'gold',    i:'👑', n:'Sterne-Königin',      d:'Überall 3 Sterne', ok:() => LEVELS.every(l => S.stars[l.id] === 3) },
+  { id:'m10',     i:'🟨', n:'10 goldene Felder',   d:'10 Aufgaben auf der Tafel gemeistert', ok:() => mastered() >= 10 },
+  { id:'m30',     i:'🟧', n:'30 goldene Felder',   d:'30 Aufgaben gemeistert', ok:() => mastered() >= 30 },
+  { id:'m55',     i:'🏅', n:'Goldene Tafel',       d:'ALLE Aufgaben gemeistert – du kannst das Einmaleins!', ok:() => mastered() >= ALLFACTS.length },
+  { id:'s3',      i:'🔥', n:'3 Tage am Stück',     d:'3 Tage hintereinander gespielt', ok:() => S.streak >= 3 },
+  { id:'s7',      i:'🔥', n:'Eine ganze Woche',    d:'7 Tage hintereinander gespielt', ok:() => S.streak >= 7 },
+  { id:'s30',     i:'🌋', n:'Feuer-Drache',        d:'30 Tage hintereinander gespielt', ok:() => S.streak >= 30 },
+  { id:'b10',     i:'⚡', n:'Blitz',               d:'10 Aufgaben in der Blitz-Runde', ok:() => S.blitzBest >= 10 },
+  { id:'b20',     i:'⚡', n:'Donner-Blitz',        d:'20 Aufgaben in der Blitz-Runde', ok:() => S.blitzBest >= 20 },
+  { id:'b30',     i:'🌩️', n:'Gewitter-Blitz',      d:'30 Aufgaben in der Blitz-Runde', ok:() => S.blitzBest >= 30 },
+  { id:'a500',    i:'🧮', n:'500 richtige',        d:'500 Aufgaben richtig gerechnet', ok:() => S.totalCorrect >= 500 },
+  { id:'a2000',   i:'🏆', n:'2000 richtige',       d:'2000 Aufgaben richtig gerechnet', ok:() => S.totalCorrect >= 2000 },
+  { id:'hatch',   i:'🐣', n:'Geschlüpft!',         d:'Funkel ist aus dem Ei geschlüpft (Level 3)', ok:() => playerLevel().lv >= 3 },
+  { id:'king',    i:'🐉', n:'König Funkel',        d:'Funkel bekommt seine Krone (Level 15)', ok:() => playerLevel().lv >= 15 },
+  { id:'shop5',   i:'🏝️', n:'Schöne Insel',        d:'5 Sachen für die Insel gekauft', ok:() => S.items.length >= 5 },
+  { id:'shopall', i:'🎡', n:'Traum-Insel',         d:'Alles im Insel-Laden gekauft', ok:() => S.items.length >= ITEMS.length },
+  { id:'stick30', i:'📒', n:'Sticker-Sammlerin',   d:'30 Sticker gesammelt', ok:() => S.stickers.length >= 30 },
+  { id:'stickall',i:'📚', n:'Album voll',          d:'Alle Sticker gesammelt', ok:() => S.stickers.length >= STICKERS.length },
+];
+function checkAchievements() {
+  const fresh = ACH.filter(a => !S.ach.includes(a.id) && a.ok());
+  if (!fresh.length) return;
+  fresh.forEach(a => S.ach.push(a.id)); S.coins += 5 * fresh.length; save();
+  fresh.forEach((a, i) => setTimeout(() => { toast(`🏆 Neuer Pokal: ${a.i} ${a.n}! (+5 💎)`, 2800); sndWin(); }, 1200 + i * 3000));
+}
+
+/* ---------- Bildschirme ---------- */
+function updateHeader() {
+  $$('.coins').forEach(e => e.textContent = S.coins);
+  $$('.starsTotal').forEach(e => e.textContent = Object.values(S.stars).reduce((a, b) => a + b, 0));
+  $$('.streak').forEach(e => e.textContent = S.streak);
+  $$('.pname').forEach(e => e.textContent = S.name ? S.name + 's' : 'Meine');
+}
+function go(name) {
+  if (G && G.timer && name !== 'game') { clearInterval(G.timer); }
+  if (name !== 'game' && name !== 'result' && G && $('#s-game').classList.contains('active')) G = null;
+  if (name === 'levels') renderLevels();
+  if (name === 'album') renderAlbum();
+  if (name === 'shop') renderShop();
+  if (name === 'ach') renderAch();
+  if (name === 'table') renderTable();
+  if (name === 'parents') renderParents();
+  if (name === 'home') renderHome();
+  updateHeader();
+  $$('.screen').forEach(s => s.classList.toggle('active', s.id === 's-' + name));
+  window.scrollTo(0, 0);
+}
+function islandHTML() {
+  const d = dragon(playerLevel().lv);
+  return `<span class="sun">☀️</span><div class="land"></div>` +
+    ITEMS.filter(it => S.items.includes(it.id)).map(it => `<span class="it" style="left:${it.x}%;top:${it.y * 0.9}px">${it.e}</span>`).join('') +
+    `<span class="dragon">${d.e}</span>`;
+}
+function renderHome() {
+  const pl = playerLevel(), d = dragon(pl.lv);
+  const h = new Date().getHours();
+  const greet = h < 11 ? 'Guten Morgen' : h < 18 ? 'Hallo' : 'Guten Abend';
+  const lines = [
+    `${greet}${S.name ? ', ' + S.name : ''}! ${d.say}`,
+    `${greet}${S.name ? ', ' + S.name : ''}! Schon ${mastered()} goldene Felder auf deiner Tafel. Schaffen wir heute ein neues?`,
+    `Weißt du was? 7 · 8 = 56. Denk an 5, 6, 7, 8!`,
+    `Tipp von ${d.n}: Tausch-Aufgaben sind gleich! 3 · 8 ist dasselbe wie 8 · 3.`,
+  ];
+  $('#homeFace').textContent = d.e;
+  $('#homeBuddy').textContent = S.rounds === 0 ? `Hallo${S.name ? ' ' + S.name : ''}! Ich bin Funkel, ein kleiner Drache – noch im Ei! Wenn du Mal-Aufgaben rechnest, schlüpfe ich und werde groß.` : pick(lines);
+  $('#xpBox').innerHTML = `<div class="row"><span>Level ${pl.lv} · ${title(pl.lv)}</span><small>${pl.rest} / ${pl.need} XP</small></div><div class="bar"><i style="width:${Math.round(100 * pl.rest / pl.need)}%"></i></div>`;
+  $('#homeIsland').innerHTML = islandHTML();
+  $('#dailyInfo').textContent = S.dailyDone === today() ? '✔ heute geschafft – nochmal?' : '+15 💎 Tages-Bonus';
+  $('#blitzInfo').textContent = S.blitzBest ? `Rekord: ${S.blitzBest}` : '60 Sekunden';
+  $('#tableInfo').textContent = `${mastered()} / ${ALLFACTS.length} golden`;
+}
+function renderLevels() {
+  $('#levelList').innerHTML = LEVELS.map(l => {
+    const st = S.stars[l.id] || 0, un = unlocked(l.id);
+    return `<button class="lvl ${un ? '' : 'locked'}" data-l="${l.id}"><span class="num">${l.id}</span><div class="ic">${l.icon}</div><div class="t">${l.title}</div><div class="d">${l.desc}</div><div class="st">${'⭐'.repeat(st)}${'☆'.repeat(3 - st)}</div></button>`;
+  }).join('');
+  $$('#levelList .lvl').forEach(b => b.onclick = () => {
+    const id = Number(b.dataset.l);
+    if (!unlocked(id)) { toast('🔒 Schaffe erst Insel ' + (id - 1) + ' mit mindestens einem Stern!'); sndBad(); return; }
+    startLevel(id);
+  });
+}
+function renderTable() {
+  let h = '<div class="h">·</div>';
+  for (let c = 1; c <= 10; c++) h += `<div class="h">${c}</div>`;
+  for (let r = 1; r <= 10; r++) {
+    h += `<div class="h">${r}</div>`;
+    for (let c = 1; c <= 10; c++) { const f = fact(r, c); h += `<div class="m${f.b}" data-r="${r}" data-c="${c}">${r * c}</div>`; }
+  }
+  $('#tableGrid').innerHTML = h;
+  $('#tableCount').textContent = `⭐ ${mastered()} / ${ALLFACTS.length}`;
+  $('#tableShow').innerHTML = '';
+  $$('#tableGrid [data-r]').forEach(el => el.onclick = () => {
+    const r = +el.dataset.r, c = +el.dataset.c;
+    $('#tableShow').innerHTML = `<div class="card" style="margin-top:12px"><div class="task" style="font-size:40px">${r} · ${c} = ${r * c}</div>${dotsHTML(r, c, true)}<div class="tip">💡 ${hintFor(r, c)}</div></div>`;
+    speak(`${r} mal ${c} ist ${r * c}`);
+    $('#tableShow').scrollIntoView({ behavior:'smooth', block:'nearest' });
+  });
+}
+function renderAlbum() {
+  $('#albumCount').textContent = `${S.stickers.length} / ${STICKERS.length}`;
+  $('#albumGrid').innerHTML = STICKERS.map(s => S.stickers.includes(s) ? `<div>${s}</div>` : `<div class="no">?</div>`).join('');
+}
+function renderShop() {
+  updateHeader();
+  $('#shopGrid').innerHTML = ITEMS.map(it => {
+    const own = S.items.includes(it.id);
+    return `<div class="item"><div class="e">${it.e}</div><div class="n">${it.n}</div>` +
+      (own ? `<button class="btn small grey" disabled>✔ Auf der Insel</button>` : `<button class="btn small" data-buy="${it.id}">💎 ${it.p}</button>`) + `</div>`;
+  }).join('');
+  $$('#shopGrid [data-buy]').forEach(b => b.onclick = () => {
+    const it = ITEMS.find(x => x.id === b.dataset.buy);
+    if (S.coins < it.p) { toast(`Dir fehlen noch ${it.p - S.coins} 💎. Spiel noch ein paar Runden!`); sndBad(); return; }
+    S.coins -= it.p; S.items.push(it.id); save(); sndWin(); confetti(25);
+    toast(`🎉 ${it.e} ${it.n} steht jetzt auf deiner Insel!`); checkAchievements(); renderShop();
+  });
+}
+function renderAch() {
+  $('#achCount').textContent = `🏆 ${S.ach.length} / ${ACH.length}`;
+  $('#achList').innerHTML = ACH.map(a => `<div class="${S.ach.includes(a.id) ? '' : 'no'}"><span class="i">${a.i}</span><span>${a.n}<small>${a.d}</small></span></div>`).join('');
+}
+function renderParents() {
+  $('#pName').value = S.name; $('#pSound').checked = S.sound; $('#pAutoSpeak').checked = S.autoSpeak; $('#pDiv').checked = S.divMix;
+  const pct = S.totalAnswered ? Math.round(100 * S.totalCorrect / S.totalAnswered) : 0;
+  const hard = ALLFACTS.map(([a, b]) => ({ a, b, f:fact(a, b) })).filter(x => x.f.w > 0).sort((x, y) => (y.f.w - y.f.r * .3) - (x.f.w - x.f.r * .3)).slice(0, 8);
+  const pl = playerLevel();
+  $('#pStats').innerHTML = `<b>Statistik</b><br>Runden gespielt: ${S.rounds} · Spieler-Level ${pl.lv}<br>Aufgaben: ${S.totalAnswered} (davon ${pct}% richtig)<br>` +
+    `Gemeistert (Tafel golden): ${mastered()} / ${ALLFACTS.length}<br>` +
+    `Sterne pro Insel: ${LEVELS.map(l => `${l.title}: ${S.stars[l.id] || 0}`).join(' · ')}<br>` +
+    `Blitz-Rekord: ${S.blitzBest} · Tage-Serie: ${S.streak} · Zuletzt gespielt: ${S.lastDay || '–'}<br>` +
+    `<b>Noch schwierig:</b> ${hard.length ? hard.map(x => `${x.a}·${x.b} (${x.f.w}× falsch)`).join(', ') : '–'}`;
+}
+
+/* ---------- Ereignisse ---------- */
+document.addEventListener('click', e => { const b = e.target.closest('[data-go]'); if (b) go(b.dataset.go); });
+$('#dailyBtn').onclick = () => beginRound({ mode:'daily' });
+$('#blitzBtn').onclick = () => {
+  ask('⚡ Blitz-Runde: So viele Aufgaben wie möglich in 60 Sekunden! Bereit?', 'Los!', () => beginRound({ mode:'blitz' }));
+};
+$('#quitGame').onclick = () => {
+  if (!G) return;
+  const g = G;
+  if (g.mode === 'blitz') clearInterval(g.timer);   // Uhr anhalten, solange gefragt wird
+  ask('Runde wirklich beenden?', 'Ja, beenden', () => { G = null; go(g.mode === 'level' ? 'levels' : 'home'); },
+    () => { if (G === g && g.mode === 'blitz') startBlitzTimer(true); });
+};
+$('#pSave').onclick = () => {
+  S.name = ($('#pName').value || '').trim().slice(0, 16); S.sound = $('#pSound').checked; S.autoSpeak = $('#pAutoSpeak').checked; S.divMix = $('#pDiv').checked;
+  save(); updateHeader(); toast('Gespeichert ✔');
+};
+$('#pUnlock').onclick = () => { S.unlockAll = !S.unlockAll; save(); toast(S.unlockAll ? 'Alle Inseln sind frei 🔓' : 'Insel-Sperre wieder an 🔒'); };
+$('#pReset').onclick = () => {
+  ask('Wirklich den ganzen Fortschritt löschen? Sterne, Edelsteine, Sticker und die Tafel sind dann weg.', 'Ja, löschen', () => {
+    const name = S.name; S = JSON.parse(JSON.stringify(DEFAULT)); S.name = name; save(); updateHeader(); toast('Fortschritt gelöscht'); go('home');
+  });
+};
+if ('speechSynthesis' in window) { try { speechSynthesis.getVoices(); } catch (e) {} }
+renderHome(); updateHeader();
+</script>
+</body>
+</html>
